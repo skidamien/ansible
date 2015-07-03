@@ -1,0 +1,39 @@
+---
+- hosts: all
+  gather_facts: True
+  sudo: yes
+  vars:
+    newrelic_license_key: <YOUR_LICENCE_KEY_HERE>
+
+  tasks:
+
+  - name: Ubuntu -  add repo key
+    apt_key: url=https://download.newrelic.com/548C16BF.gpg state=present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Ubuntu - add newrelic apt repo
+    apt_repository: repo="deb http://apt.newrelic.com/debian/ newrelic non-free" state=present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Ubuntu - update apt cache
+    apt: update_cache=yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: CentOS - add newrelic yum repo
+    yum: name=http://download.newrelic.com/pub/newrelic/el5/i386/newrelic-repo-5-3.noarch.rpm state=present
+    when: ansible_distribution == 'CentOS'	      
+
+  - name: Ubuntu - install server monitor
+    apt: pkg=newrelic-sysmond state=latest
+    when: ansible_distribution == "Ubuntu"
+
+  - name: CentOS - install server monitor
+    yum: pkg=newrelic-sysmond state=latest
+    when: ansible_distribution == "CentOS"
+
+  - name: newrelic | configure server monitor license
+    lineinfile: dest=/etc/newrelic/nrsysmond.cfg regexp="^license_key=" line="license_key={{ newrelic_license_key }}" backup=yes
+
+  - name: ensure server monitor is running
+    service: name=newrelic-sysmond state=started
+
