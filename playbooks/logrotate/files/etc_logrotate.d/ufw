@@ -1,0 +1,26 @@
+#############################################################
+#                                                           #
+# Managed by Ansible                                        #
+#                                                           #
+# any manual edits made will be lost on the next invokation #
+# of ansible                                                #
+#                                                           #
+#############################################################
+
+/var/log/ufw.log
+{
+	daily
+	rotate 15
+	dateext
+	dateformat .%Y-%m-%d
+	missingok
+	compress
+	delaycompress
+	ifempty
+	sharedscripts
+	postrotate
+		invoke-rc.d rsyslog reload >/dev/null 2>&1 || true
+		find /var/log/ -name "ufw.log.*.gz" -mtime +7 -exec mv {} /var/log/log_ship_queue_to_s3 \;
+		chmod -R 666 /var/log/log_ship_queue_to_s3/
+	endscript
+}

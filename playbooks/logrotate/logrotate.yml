@@ -1,0 +1,19 @@
+---
+- hosts: all
+  gather_facts: False
+  sudo: yes
+
+  tasks:
+  - name: Create log ship queue dir
+    file: path=/var/log/log_ship_queue_to_s3 state=directory
+
+  - name: Copy /etc/logrotate.conf
+    action: copy src=./files/etc_logrotate.conf dest=/etc/logrotate.conf owner=root group=root mode=0644
+
+  - name: Copy /etc/cron.daily/logrotate
+    action: copy src=./files/etc_cron.daily_logrotate dest=/etc/cron.daily/logrotate owner=root group=root mode=0755
+
+  - name: Copy /etc/logrotate.d/*
+    action: copy src={{ item }} dest=/etc/logrotate.d/ owner=root group=root mode=0644
+    with_fileglob:
+    - ./files/etc_logrotate.d/*
