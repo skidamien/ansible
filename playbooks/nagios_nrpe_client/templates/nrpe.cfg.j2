@@ -1,0 +1,49 @@
+#
+#  Managed by Ansible
+#
+
+log_facility=daemon
+server_port=5666
+nrpe_user=nagios
+nrpe_group=nagios
+dont_blame_nrpe=0
+debug=0
+command_timeout=60
+connection_timeout=300
+
+#Prod nagios
+#allowed_hosts=10.122.149.126,72.46.253.196
+
+#Dev nagios
+#allowed_hosts=192.168.123.230
+
+allowed_hosts={{ allowed_hosts }}
+
+
+## Web server checks
+command[check_apache_conn]=/usr/lib/nagios/plugins/check_apache_conn
+command[check_netstat]=/usr/lib/nagios/plugins/check_netstat
+# DB stuff
+command[check_pg_bloat]=/usr/lib/nagios/plugins/check_postgres.pl -H localhost --action bloat -db CareCloud_Demo
+command[check_pg_connect]=/usr/lib/nagios/plugins/check_postgres.pl -H localhost --action connection -db CareCloud_Demo
+command[check_pg_dspace]=/usr/lib/nagios/plugins/check_postgres.pl -H localhost -w 90% -c 95% --action disk_space
+command[check_pg_users]=/usr/lib/nagios/plugins/check_postgres.pl -H localhost --action backends
+command[check_pg_txnidle]=/usr/lib/nagios/plugins/check_postgres.pl -H localhost -w 5 -c 7 --action txn_idle
+command[check_pg_demo]=/usr/lib/nagios/plugins/check_postgres.pl -w 50GB -c 62GB --action table_size -db CareCloud_Demo
+command[check_dbsize]=/usr/lib/nagios/plugins/check_postgres.pl -w 110GB -c 130GB --action database_size
+command[check_pg_lock]=/usr/lib/nagios/plugins/check_postgres.pl -H localhost --action locks --critical="total=250;waiting=5;exclusive=20"
+command[check_db_conns]=/usr/lib/nagios/plugins/check_db_conns
+# General Checks
+command[check_memory]=/usr/lib/nagios/plugins/check_mem.pl -C -f  -w 15 -c 10
+command[check_users]=/usr/lib/nagios/plugins/check_users -w 5 -c 10
+command[check_load]=/usr/lib/nagios/plugins/check_load -w 15,10,5 -c 30,25,20
+command[check_disk]=/usr/lib/nagios/plugins/check_disk -w 15% -c 10% -p / -p /mnt
+command[check_zombie_procs]=/usr/lib/nagios/plugins/check_procs -w 5 -c 10 -s Z
+command[check_total_procs]=/usr/lib/nagios/plugins/check_procs -w 150 -c 200
+command[check_memory]=/usr/lib/nagios/plugins/check_mem.pl -C -f  -w 20 -c 10
+# Delayed Jobs checks
+command[check_procs0]=/usr/lib/nagios/plugins/check_procs -c 1:5 -v -t 10 -a delayed_job.0
+command[check_procs1]=/usr/lib/nagios/plugins/check_procs -c 1:5 -v -t 10 -a delayed_job.1
+command[check_procs2]=/usr/lib/nagios/plugins/check_procs -c 1:5 -v -t 10 -a delayed_job.2
+command[check_procs3]=/usr/lib/nagios/plugins/check_procs -c 1:5 -v -t 10 -a delayed_job.3
+command[restart-delayedjobs]=/usr/lib/nagios/plugins/delayed_job_restart

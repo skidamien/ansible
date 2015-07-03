@@ -1,0 +1,73 @@
+#
+#  If running on hosts to conect to the prod nagios
+#  ansible-playbook -i <inventory file> nagios_nrpe_client.yml --extra-vars '{"ALLOWED_HOSTS": "10.122.149.126,72.46.253.196"}'
+#
+#
+#  If running on hosts to conect to the dev nagios
+#  ansible-playbook -i <inventory file> nagios_nrpe_client.yml --extra-vars '{"ALLOWED_HOSTS": "192.168.123.230"}'
+#
+
+
+---
+- hosts: all
+  gather_facts: True
+  sudo: yes
+  vars:
+    allowed_hosts: "{{ ALLOWED_HOSTS }}"
+
+  tasks:
+  - name: determine prod or dev
+    set_fact:
+      allowed_hosts: "{{ ALLOWED_HOSTS }}"
+
+  - name: Ubuntu - install nagios nrpe
+    when: ansible_distribution == "Ubuntu"
+    apt: name={{item}} state=installed
+    with_items:
+    - nagios-nrpe-server
+    - nagios-plugins-basic
+
+
+  - name: CentOS - install nagios nrpe
+    when: ansible_distribution == "CentOS"
+    yum: name={{item}} state=installed
+    with_items:
+    - nagios-nrpe
+    - nagios-plugins-nrpe
+    - net-snmp-utils
+
+#  - name: Copy nrpe config - /etc/nagios/nrpe.cfg
+#    action: copy src=./files/nrpe.cfg dest=/etc/nagios/nrpe.cfg owner=root group=root mode=0644
+
+  - name: Copy nrpe config - /etc/nagios/nrpe.cfg
+    template: src=./templates/nrpe.cfg.j2 dest=/etc/nagios/nrpe.cfg owner=root group=root mode=0644
+
+  - name: Ubuntu - Create log nagios plugin directory
+    when: ansible_distribution == "Ubuntu"
+    file: path=/var/lib64/nagios/plugins/ state=directory owner=root group=root mode=0777
+
+  - name: CentOS - Create log nagios plugin directory
+    when: ansible_distribution == "CentOS"
+    file: path=/var/lib/nagios/plugins/ state=directory owner=root group=root mode=0777
+
+  - name: Ubuntu - Copy nagios plugins - /usr/lib/nagios/plugins
+    when: ansible_distribution == "Ubuntu"
+    action: copy src={{ item }} dest=/usr/lib/nagios/plugins owner=root group=root mode=0644
+    with_fileglob:
+    - ./files/plugins/*
+
+  - name: CentOS - Copy nagios plugins - /usr/lib64/nagios/plugins
+    when: ansible_distribution == "CentOS"
+    action: copy src={{ item }} dest=/usr/lib64/nagios/plugins owner=root group=root mode=0777
+    with_fileglob:
+    - ./files/plugins/*
+
+  - name: Ubuntu - ensure nagios server is running
+    when: ansible_distribution == "Ubuntu"
+    service: name=nagios-nrpe-server state=started
+
+  - name: Ubuntu - ensure nagios server is running
+    when: ansible_distribution == "CentOS"
+    service: name=nrpe state=started
+
+
