@@ -1,0 +1,31 @@
+---
+- hosts: all
+  gather_facts: False
+  sudo: yes
+
+
+  tasks:
+  - name: Add dmichalosky group
+    group: name=dmichalosky gid=5000 state=present
+    with_items:
+      - { name=devops, gid=3000, state=present }
+
+  - name: Add dmichalosky user
+    user:
+      name=dmichalosky
+      shell=/bin/bash
+      uid=5000
+      group=dmichalosky
+#      groups=devops
+
+  - name: Add dmichalosky SSH key
+    authorized_key: 
+      user=dmichalosky
+      key="{{ lookup('file', "./files/dmichalosky_mac.pub") }}"
+
+  - name: Add dmichalosky remote to sudoers
+    lineinfile:
+      "dest=/etc/sudoers
+      regexp='^dmichalosky ALL'
+      line='dmichalosky ALL=(ALL) NOPASSWD: ALL'
+      state=present"
